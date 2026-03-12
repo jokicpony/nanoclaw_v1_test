@@ -10,20 +10,20 @@ interface TranscriptionConfig {
 }
 
 const DEFAULT_CONFIG: TranscriptionConfig = {
-  model: 'whisper-1',
+  model: 'whisper-large-v3-turbo',
   enabled: true,
   fallbackMessage: '[Voice Message - transcription unavailable]',
 };
 
-async function transcribeWithOpenAI(
+async function transcribeWithGroq(
   audioBuffer: Buffer,
   config: TranscriptionConfig,
 ): Promise<string | null> {
-  const env = readEnvFile(['OPENAI_API_KEY']);
-  const apiKey = env.OPENAI_API_KEY;
+  const env = readEnvFile(['GROQ_API_KEY']);
+  const apiKey = env.GROQ_API_KEY;
 
   if (!apiKey) {
-    console.warn('OPENAI_API_KEY not set in .env');
+    console.warn('GROQ_API_KEY not set in .env');
     return null;
   }
 
@@ -32,13 +32,16 @@ async function transcribeWithOpenAI(
     const OpenAI = openaiModule.default;
     const toFile = openaiModule.toFile;
 
-    const openai = new OpenAI({ apiKey });
+    const groq = new OpenAI({
+      apiKey,
+      baseURL: 'https://api.groq.com/openai/v1',
+    });
 
     const file = await toFile(audioBuffer, 'voice.ogg', {
       type: 'audio/ogg',
     });
 
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await groq.audio.transcriptions.create({
       file: file,
       model: config.model,
       response_format: 'text',
@@ -47,7 +50,7 @@ async function transcribeWithOpenAI(
     // When response_format is 'text', the API returns a plain string
     return transcription as unknown as string;
   } catch (err) {
-    console.error('OpenAI transcription failed:', err);
+    console.error('Groq transcription failed:', err);
     return null;
   }
 }
@@ -80,7 +83,7 @@ export async function transcribeAudioMessage(
 
     console.log(`Downloaded audio message: ${buffer.length} bytes`);
 
-    const transcript = await transcribeWithOpenAI(buffer, config);
+    const transcript = await transcribeWithGroq(buffer, config);
 
     if (!transcript) {
       return config.fallbackMessage;
