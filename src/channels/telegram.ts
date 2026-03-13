@@ -4,6 +4,7 @@ import { Api, Bot } from 'grammy';
 import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../config.js';
 import { readEnvFile } from '../env.js';
 import { logger } from '../logger.js';
+import { transcribeAudioBuffer } from '../transcription.js';
 import { registerChannel, ChannelOpts } from './registry.js';
 import {
   Channel,
@@ -195,7 +196,38 @@ export class TelegramChannel implements Channel {
 
     this.bot.on('message:photo', (ctx) => storeNonText(ctx, '[Photo]'));
     this.bot.on('message:video', (ctx) => storeNonText(ctx, '[Video]'));
-    this.bot.on('message:voice', (ctx) => storeNonText(ctx, '[Voice message]'));
+    this.bot.on('message:voice', async (ctx) => {
+      const chatJid = `tg:${ctx.chat.id}`;
+      const group = this.opts.registeredGroups()[chatJid];
+      if (!group) return;
+
+      const fileId = ctx.message.voice.file_id;
+      const fallback = '[Voice message - transcription unavailable]';
+      let content = fallback;
+
+      try {
+        const file = await this.bot!.api.getFile(fileId);
+        const filePath = file.file_path;
+        if (filePath) {
+          const token = this.botToken;
+          const url = `https://api.telegram.org/file/bot${token}/${filePath}`;
+          const audioBuffer = await new Promise<Buffer>((resolve, reject) => {
+            https.get(url, (res) => {
+              const chunks: Buffer[] = [];
+              res.on('data', (chunk) => chunks.push(chunk));
+              res.on('end', () => resolve(Buffer.concat(chunks)));
+              res.on('error', reject);
+            }).on('error', reject);
+          });
+          const transcript = await transcribeAudioBuffer(audioBuffer);
+          if (transcript) content = transcript;
+        }
+      } catch (err) {
+        logger.warn({ err }, 'Telegram voice transcription failed');
+      }
+
+      storeNonText(ctx, content);
+    });
     this.bot.on('message:audio', (ctx) => storeNonText(ctx, '[Audio]'));
     this.bot.on('message:document', (ctx) => {
       const name = ctx.message.document?.file_name || 'file';

@@ -1,1 +1,38 @@
-{}
+{
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Edit(*)",
+      "Write(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Bash(npm run *)",
+      "Bash(npm install*)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git fetch*)",
+      "Bash(git merge*)",
+      "Bash(git remote*)",
+      "Bash(git checkout*)",
+      "Bash(launchctl kickstart*)",
+      "Bash(launchctl list*)",
+      "Bash(launchctl load*)",
+      "Bash(launchctl unload*)",
+      "Bash(tail *)",
+      "Bash(grep *)",
+      "Bash(sqlite3 *)",
+      "Bash(curl *)",
+      "Bash(cp .env*)",
+      "Bash(wc *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(echo *)"
+    ],
+    "deny": []
+  }
+}

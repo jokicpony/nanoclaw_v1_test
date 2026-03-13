@@ -55,6 +55,13 @@ async function transcribeWithGroq(
   }
 }
 
+export async function transcribeAudioBuffer(
+  audioBuffer: Buffer,
+): Promise<string | null> {
+  const transcript = await transcribeWithGroq(audioBuffer, DEFAULT_CONFIG);
+  return transcript ? transcript.trim() : null;
+}
+
 export async function transcribeAudioMessage(
   msg: WAMessage,
   sock: WASocket,
